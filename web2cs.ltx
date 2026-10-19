@@ -1,0 +1,390 @@
+\documentclass{ltugboat}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\def\url{\tburl} % maybe will move into class file eventually
+\newcommand{\Csharp}{C\kern0.05em\raisebox{0.2ex}{\fontsize{10pt}{12pt}\selectfont\#}}
+
+\title{\texttt{tex.web} transformed to \texttt{tex.cs}}
+
+\author{J. Daniel Smith}
+\address{3588 Plymouith Rd. \#184 \\ Ann Arbor, Michigan 48105 \\ USA}
+\netaddress{dan (at) jdanielsmith dot me}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\texttt{tex.web} transformed into {\Csharp}; not another port, rather the {\WEB} is preserved in IDE-friendly {\Csharp}.
+\end{abstract}
+
+\section{Introduction}
+
+I've transformed \texttt{tex.web} into {\Csharp} (and {\Cplusplus}).  Note the wording; this is not another port
+of {\TeX} to \emph{some language}.  Rather, \texttt{tex.cs} follows the presentation of the {\WEB} while still
+being ordinary IDE-friendly {\Csharp}.  The result is a version of {\TeX} that is structurally faithful to \texttt{tex.web},
+usable in a modern IDE, and passes the TRIP test---without using \texttt{tangle}.
+
+\section{Why and why now?}
+
+The `why now?' is easy: Knuth was born in 1938; regrettably, that means we're likely getting close to
+{\TeX} version \verb|$\pi$|~\cite{Knuth:TB11-4-489}.  {\TeX} is extremely stable, \texttt{tex.web} isn't going to change much;
+so its transformation into {\Csharp} (or {\Cplusplus}) can be done manually once without fear of a moving target.
+Should we be fortunate enough to get {\TeX} 3.1415926539 (currently scheduled for 2029~\cite{Knuth:2021:TT})
+any changes to \texttt{tex.web} can readily be incorporated `by hand.'
+
+`Why?' is more multi-faceted.  In no particular order, reasons could include:
+\begin{itemize}
+\item \texttt{tex.web} might be one of the more important programming artifacts; but its form
+makes it increasingly inaccessible to developers. 
+
+\item Demonstrating that a 40-year-old {\Pas} program can be modernized;
+perhaps software engineers want to rewrite a bit too much? 
+
+\item There are few non-trivial programs (other than \MF) which have been published as a book;
+it's quite unusual to have such a canonical reference for a program.
+
+\item Knuth once remarked that he was slightly disappointed in the lack of experimentation with {\TeX}
+itself~\cite{knuth:questions-and-answers-i}; this, despite clear hooks and suggestions
+in the code itself (and even Knuth's own \TeX-\XeT~\cite{Knuth:TB8-1-14}).
+
+\item While function-call overhead is still important, such decisions are usually better left to the compiler rather
+than the programmer; especially for a program like {\TeX} which is unlikely to be on a critical hot path.
+
+\item Programming languages now have constructs such as lambdas and reflection which
+make it possible to do \texttt{tangle}-like code manipulation in the language itself.
+
+\item The TRIP test helps ensure that the result is truly {\TeX}, not just something that `compiles and runs.'
+\end{itemize}
+
+\section{Creating \texttt{tex.cs}}
+
+What follows is a description of the process of creating a readable \texttt{tex.cs} from \texttt{tex.web}.
+No tools were created to enable the process to be repeated; there likely isn't much interest in converting
+other {\TeX}ware to {\Csharp} in this manner.  (This isn't quite true; I first transformed \texttt{DVIType},
+both as a proof-of-concept and for eventual use in running the \texttt{TRIP} test.)
+
+Undoubtedly, the single most important tool used was Martin Ruckert's \texttt{web2w}~\cite{Ruckert:2017:CTW}.
+This removed the tedium of munging {\Pas} syntax into C; it also largely implicitly answered the question of
+how much \WEB/{\Pas} syntax should be preserved.  For example, using the C-preprocessor,
+\verb|help2("a")("b")| preserved while {\Csharp} all but requires \verb|help2("a", "b")|. 
+\texttt{web2w} also removes the \texttt{TEX.POOL} file~\cite{Ruckert:2021:WCC}, even C has better support
+for strings than Standard {\Pas} did in 1982. Thus, much of the {\Csharp} code is simply the C code from
+\texttt{tex.w} rather than hand-ported {\Pas}.
+
+The next step was simple: all {\WEB} modules were turned into comment blocks, and I added
+back the original {\Pas} for easy comparison with the {\Csharp} code.  To enable
+possible future \texttt{weave}-like processing, each comment block begins with \verb|/*[tex.web]|
+and ends with \verb|[tex.web]*/|.
+\begin{verbatim}[\small]
+/*[tex.web]
+@* \[1] Introduction.
+This is \TeX, a document compiler ...
+[tex.web]*/
+\end{verbatim}
+(This module has an empty {\Pas} part.)  No further attempt was made to 
+preserve any other \texttt{weave} features; in particular, cross-reference
+and index tags in code were removed or commented-out as they are invalid
+code; IDEs have a host of code spelunking features.
+
+For example, at line 948 of \texttt{tex.web} the `\verb|@!|' before \texttt{bypass\_eoln}
+was just removed from the \texttt{web2w} transformed code:
+\begin{verbatim}[\small]
+boolean
+input_ln(alpha_file f, boolean bypass_eoln)
+\end{verbatim}
+
+Much of the C code produced by \texttt{web2w} can be compiled as {\Csharp} with minimal effort;
+that's because  \texttt{tex.w} is a straight-forward transformation of the {\Pas} code, it doesn't use
+a lot of C features. We get our first array at line 588, using an \texttt{ArrayOf} utility class, 
+the {\Csharp} is
+\begin{verbatim}[\small]
+/*[tex.web]
+@ The {\TeX} processor converts between ...
+
+@<Glob...@>=
+@!xord: array [text_char] of ASCII_code;
+	{specifies conversion of input characters}
+[tex.web]*/
+
+ArrayOf<ASCII_code> xord = new(text_char);
+    // specifies conversion of input characters
+\end{verbatim}
+which also nicely corresponds to the original {\WEB} code.
+
+Implementing a C-runtime in {\Csharp} targeted at the specific needs of \texttt{tex.w} made
+it possible to have the {\Csharp} version passing the TRIP test with minimal changes to
+\texttt{tex.w} (i.e., using \texttt{ctangle} to produce \texttt{tex.c}
+and then renaming that file to \texttt{tex.cs}).
+
+\texttt{ArrayOf} is one of several pieces of a minimal {\Pas} runtime intended to preserve the original
+{\WEB} code rather than convert to language-specific routines; e.g., {\Pas}'s \texttt{reset()} instead
+of .NET's \texttt{File.Open()} or C's \texttt{fopen()}.
+
+\section{Preserving the structure of \texttt{tex.web}}
+At this point, we have `just' a port of {\TeX} to {\Csharp}; the `C' code in 
+\texttt{tex.w} is now actually {\Csharp}.  Yes, this is interesting
+and useful (is there an actual {\TeX} implementation in .NET?), but with \texttt{ctangle}
+still in the picture it is cumbersome to use in an IDE that is expecting
+real {\Csharp} source files.
+
+\subsection{One large class}
+The key insight at this point is that both {\Csharp} and {\Cplusplus} (as well as several other languages)
+allow most class members to appear in \emph{any order}, a member can be used before it is declared.
+By putting all the code into a single class, the effect of \texttt{tangle}'s code-shuffling is
+achieved by the compiler.  Doing something similar in C requires forward declarations
+which detracts from the {\WEB} presentation.  The result is that \verb|@<Glob...@>=| (line 460)
+and \verb|@<Types...@>=| (line 550) just become in-place code:
+\begin{verbatim}[\small]
+/*[tex.web]
+@ In case somebody has inadvertently made ...
+
+@<Glob...@>=
+@!bad:integer; {is some ``constant'' wrong?}
+[tex.web]*/
+
+integer bad; /*is some ``constant'' wrong?*/
+\end{verbatim}
+and
+\begin{verbatim}[\small]
+/*[tex.web]
+@ Characters of text that have been ...
+
+@<Types...@>=
+@!ASCII_code=0..255; {eight-bit numbers}
+[tex.web]*/
+
+static readonly Range ASCII_code = 0..255;
+	// eight-bit numbers
+\end{verbatim}
+
+After that, many of the `C' parts can become member functions as they are standalone
+pieces of code which only use `global' variables (which is now member data).  The named
+`C' part becomes the name of a member function, replacing spaces
+with underscores and removing other characters that can't be part of an identifier.
+Yes, this becomes a bit unwieldly in places because {\WEB} treats the names
+as \texttt{weave} text with full formatting and potentially long names.
+\begin{verbatim}[\small]
+/*[tex.web]
+@ We need a special routine to read the ...
+
+@<Report overflow of the input buffer,
+	and abort@>=
+if format_ident=0 then ...
+[tex.web]*/
+
+void
+Report_overflow_of_the_input_buffer_and_abort()
+{
+	if (format_ident is null) ...
+}
+\end{verbatim}
+
+\subsection{Local functions in \Csharp}
+The first real complication is when a procedure declares some local variables
+which are then used in multiple subsequent parts.  In {\Csharp} this is
+handled with local functions~\cite{mslearn:local-functions}. See \texttt{short\_display} at line 3541:
+\begin{verbatim}[\small]
+/*[tex.web]
+@ Boxes, rules, inserts, whatsits, marks, ...
+@p procedure short_display(@!p:integer);
+	{prints highlights of list |p|}
+    [...]
+	@<Print a short indication of the contents
+		of node |p|@>;
+    [...]
+[tex.web]*/
+
+void short_display(integer p)
+	/*prints highlights of list |p|*/
+{
+   [...]
+   Print_a_short_indication_of_the__...();
+
+   /*[tex.web]
+   @ @<Print a short indication of the contents
+   	of node |p|@>=
+   [...]
+   [tex.web]*/
+
+   void
+   Print_a_short_indication_of_the_...()
+   {
+      [...]
+	}
+} /*short_display()*/
+\end{verbatim}
+Notice that \texttt{short\_display()} ends at the second
+\verb|/*[tex.web]|\dots\verb|[tex.web]*/| block, after the local function
+\texttt{Print\_...()} is defined.
+
+\subsection{Reflection and \texttt{[Module]}}
+Some {\WEB} modules are spread throughout \texttt{tex.web}, \texttt{tangle} combines these
+into one block of code; initialization is one example.  Using reflection in {\Csharp} (lambdas in {\Cplusplus}),
+we can arrange for these disparate blocks
+of code to be called all at once (\texttt{[Module]} is a custom attribute~\cite{mslearn:custom-attributes}):
+\begin{verbatim}[\small]
+/*[tex.web]
+[...]
+@<Set init...@>=
+for i:=0 to @'37 do xchr[i]:=' ';
+[tex.web]*/
+
+[Module("Set init...")]
+void Set_initial_values_of_key_variables_2_2()
+{
+	for (i = 0; i <= 31; i++) xchr[i] = ' ';
+}
+\end{verbatim}
+
+Initialization often takes place immediately after declaration. Both
+{\Csharp} and {\Cplusplus} (as well as other languages) allow (`prefer', and sometimes
+even `require') initialization to occur at the same time as declaration.  (In {\Csharp} it is
+customary to omit initialization that is identical to default initialization).
+\begin{verbatim}[\small]
+/*[tex.web]
+@<Glob...@>=
+@!deletions_allowed:boolean;
+	{is it safe for |error| to call |get_token|?}
+[...]
+@<Set init...@>=
+deletions_allowed:=true; ...
+[tex.web]*/
+
+boolean deletions_allowed = true;
+	// is it safe for |error| to call |get_token|?
+[...]
+\end{verbatim}
+
+\subsection{Non-local \texttt{goto}s}
+Another complication is that many {\WEB} modules contain \texttt{goto}s.
+When \texttt{tangle} combines the modules, they are local \texttt{goto}s;
+however, as separate functions this is no longer the case. Exceptions can be used 
+to emulate these non-local \texttt{goto}s. Although this sounds
+bad, it is normally rather structured jumping, usually to a spot near the beginning or end of a
+significant block.
+
+The code for catching exceptions is verbose
+compared to `nothing' in {\WEB}, but thankfully is rather limited.  Here is the code at
+line 1896:
+\begin{verbatim}[\small]
+/*[tex.web]
+@ @<Get user's advice...@>=
+loop@+begin continue: [...]
+  end
+[tex.web]*/
+
+void Get_users_advice()
+{
+	while (true)
+	{
+	@continue: try
+		{
+			[...]
+		}
+		catch (GotoException ex) when
+			(ex.Label is "continue") { goto @continue; }
+	}
+}
+\end{verbatim}
+
+\subsection{Partial classes in \Csharp} 
+There are a few functions/procedures in \texttt{tex.web}
+that are too large to be presented all at once, some of
+them are even spread across multiple starred modules.  Because of other
+intervening code, {\Csharp}'s local functions won't work.
+
+The solution is to use a feature unique to {\Csharp}: \texttt{partial} classes~\cite{mslearn:partial-classes}.
+This allows the contents of the class to be multiple places in the source
+code, each writing \texttt{partial class \emph{name}}, the {\Csharp} compiler
+combines these pieces into a single class.  That, together with a helper
+\texttt{Ref} class to reference the same member data as the containing
+\texttt{TEX} class, make it possible to write the following for the code at line 12319:
+\begin{verbatim}[\small]
+/*[tex.web]
+@ The recursive procedures |hlist_out| ...
+
+procedure hlist_out;
+	{output an |hlist_node| box}
+label reswitch, move_past, fin_rule, next_p;
+var base_line: scaled;
+	{the baseline coordinate for this box}
+[...]
+begin cur_g:=0; ...
+[tex.web]*/
+
+void hlist_out() {
+	new hlist_out_(this).Invoke(); }
+sealed partial class hlist_out_(TEX tex)
+	: Ref(tex) // output an |hlist_node| box
+{
+	scaled base_line;
+		/*the baseline coordinate for this box*/
+	[...]
+	public void Invoke()
+	{
+		cur_g = 0; ...
+\end{verbatim}
+
+The implementation of \texttt{hlist\_out} continues a bit later at line 12438 after a
+few {\WEB} macros.
+\begin{verbatim}[\small]
+/*[tex.web]
+@ @d billion==float_constant(1000000000)
+@d vet_glue(#)== ...
+
+@<Move right or output leaders@>=
+begin [...]
+[tex.web]*/
+
+static readonly double billion =
+	float_constant(1_000_000_000);
+void vet_glue(double A, out double ...
+
+partial class hlist_out_
+{
+	void Move_right_or_output_leaders(pointer p)
+	{ [...]
+\end{verbatim}
+
+\subsection{Miscellaneous}
+As with almost any non-trivial piece of software, reality isn't quite that simple.
+There are a large number of minor changes needed to actually get the {\Csharp} code
+compiling; for example, several routines in {\S}54
+\titleref{System-dependent changes} make strings (and {\TeX}'s string pool)
+more natural in {\Csharp}.
+
+\section{What's next?}
+Can \texttt{tex.web} be transformed so that it is directly usable in a modern IDE?
+Apparently yes, even if the result isn't a good example of idiomatic {\Csharp}
+and nobody would write a function name like \texttt{Make\_...()} (very long name truncated). 
+Nevertheless, the result remains faithful to \texttt{tex.web}
+while remaining ordinary {\Csharp} source code.
+
+It's almost certain that if Knuth were to write {\TeX} today from scratch in {\Csharp} (or {\Cplusplus}),
+he would use the dynamic memory facilities provided by the language, i.e., \texttt{new()},
+as well as many other standardized features; the result would look nothing like \texttt{tex.cs}.
+(Although his more recent work on MMIX for \titleref{The Art of Computer Programming}
+shows he still has a penchant for Literate Programming~\cite{knuth:literate-programming},
+so he might never give up \texttt{CWEB}).
+
+A similar approach could probably be used for many other languages that support classes
+(arbitrary ordering of member names and implicit \texttt{this}) and exceptions
+(for non-local \texttt{goto}s).
+
+In any case, whatever would be gained by not using 1982 {\Pas} would surely be lost to PDF, Unicode,
+OpenType and numerous other features that are part of today's robust {\TeX} implementations.
+Yet, having a canonical {\TeX} available in a modern development environment could enable 
+experimentation, education and who knows what else?
+
+\section{Try it out for yourself}
+Experience the thrill of running {\TeX} directly in the debugger (or browser), no \texttt{\#line} directives needed!
+First, download \titleref{Visual Studio} from \url{visualstudio.microsoft.com/downloads/}.
+Then, either {\Csharp} or {\Cplusplus} source code from \url{github.com/TeX-82}.
+
+\bibliographystyle{tugboat} % tugboat's bibtex style
+\bibliography{tugboat,refs}
+
+\makesignature
+\end{document}

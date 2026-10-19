@@ -1,0 +1,9 @@
+$Id: manifest.txt 315 2020-11-15 02:07:34Z karl $
+List of files in the tugboat LaTeX package covered by the LPPL:
+
+ltubguid.ltx
+ltubguid.pdf
+ltugbib.bst
+tugboat.dtx
+tugboat.pdf
+tugboat.ins

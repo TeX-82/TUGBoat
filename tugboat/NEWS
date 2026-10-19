@@ -1,0 +1,202 @@
+$Id: NEWS 788 2026-09-15 15:00:18Z karl $
+This file records noteworthy changes.  This file is public domain.
+
+-----------------
+2.39 (2026-09-15)
+ltugboat.cls:
+- define \AI as \acro{AI}.
+- define \tubnewline as \texorpdfstring{\newline}{ }.
+- the \makevmeta option to ltugboat's {verbatim} now works with tagging.
+- skips above/below captions corrected for tables, where the caption is above.
+- change \abovecaptionskip and \floatsep by +- (respectively) 1pt,
+  and reduce \belowabstractskip to 12pt, so there's a better chance of
+  text columns coming out even.
+
+tugboat.bst:
+- recognize Unicode en dash (U+2013) so that "pp." is output instead of "p.".
+
+-----------------
+2.38 (2026-06-18)
+ltugboat.cls:
+- \Thanh actualtext uses literal UTF-8.
+
+-----------------
+2.37 (2026-06-14)
+ltugboat.cls:
+- \Thanh now uses the e-circumflex-acute (U+1EBF) character from the
+  current font, if it's defined. If it's not defined, the acute is now
+  typeset to the right of the circumflex, instead of vertically above it.
+- new abbreviations \MiKTeX, \TeXLive.
+- \abovedisplayskip and \belowdisplayskip reduced to be the same as
+  \topsep (used above/below lists, verbatims, etc.), to avoid unequal spacing.
+- \acro now defined using \NewDocumentCommand, so that it is robust and
+  can be used in titles even when tagging is active.
+
+-----------------
+2.36 (2026-01-14)
+ltugboat.cls:
+- typeset bibliographies with \raggedright by default.
+- \tubdots: intra-dot space also before first dot.
+- don't use math for \Cplusplus, etc., since OpenType math (lm, newcm)
+  results differ from traditional TeX math.
+- smaller kern for \BibTeX.
+- \CandT: tie before \&.
+
+tugboat.bst:
+- use a tie after month abbreviations by default (monthtie=0 to override).
+- use a tie after edition numbers, like "1st~ed.".
+- use a tie after the "In" output by @incollection, etc.
+- if the new field isbnoutput is set, output the isbn field if it's present,
+  preceded by "ISBN~" unless the field value already contains "ISBN".
+  Use a space instead of ~ if the field isbnspace is set.
+
+-----------------
+2.35 (2025-10-27):
+ltugboat.cls:
+- new abbreviation \PDFUA, for \acro{PDF/UA}.
+- for \BibTeX and \BibLaTeX, allow hyphenation after the "Bib".
+- if hyperref is loaded, \personalURL will make a live link.
+- more \texorpdfstring in logos to placate hyperref.
+- new debugging command \tbloggingall, since \loggingall does not set
+  \tracingonline=0, and microtype outputs a plethora of messages.
+- new debugging command \tbdebug to write a \message on a new line.
+
+tugboat.bst:
+- always use the key field for sorting, if it's non-empty; for all entry types.
+
+ltubguid.ltx:
+- mention that listings does not easily support code points above 255.
+
+-----------------
+2.34 (2024-10-29):
+ltugboat.cls:
+- keep the new forced space on toc lines within tagging-aware code, 
+  so it doesn't disappear.
+- elide spurious space for nonumber subsubsections.
+(Thanks to Ulrike Fischer for reports and fixes.)
+
+-----------------
+2.33 (2024-10-26):
+ltugboat.cls:
+- use \hfil instead of \hss in toc, to avoid silently overfull entries.
+- make \WEB, \Xe, \cents, others more tag-friendly.
+- new abbreviation \HTTPS.
+
+tugboat.bst:
+- new entry type @webpage.
+- new editor field nojournalcomma.
+- howpublished not omitted when doi or url is present.
+
+-----------------
+2.32 (2024-04-15):
+ltugboat.cls:
+- don't print leading http://, like with https://.
+	- increase natural space, stretch, shrink after run-in heads; before,
+  \frenchspacing was unintentionally in effect.
+- decrease \floatsep and \textfloatsep to go along with reduced
+  \abovecaption skip; increase topnumber, bottomnumber, totalnumber,
+  to further avoid going to a float page so soon.
+- allow some flexibility in glue below title.
+- new abbreviation \YAML.
+
+-----------------
+2.31 (2023-10-28):
+ltugboat.cls:
+- input our hyphenation exceptions (ushyphex.tex) if available.
+- \dblfloatpagefraction and similar parameters set so figures don't go
+  to a float page so soon, and reduce \abovecaptionskip.
+- new abbreviation \LMTX.
+- new abbreviations \pdfTeX and \pdfLaTeX, with italic correction after the f.
+- new generic commands \tbcode and \tbcodebreak for package names, class
+  names, file names, environment variables, etc. (Just outputs in typewriter.)
+
+tugboat.bst:
+- in month field, recognize numbers 01..12, with or without leading zero.
+- for @misc, output organization field if present.
+- support "eprints" (https://arxiv.org/abs/).
+
+Substantial rearrangement and updating of documentation.
+
+-----------------
+2.30 (2023-07-03):
+ltugboat.cls:
+- print page numbers with preceding ? in draft mode, including in references,
+  by redefining \thepage.
+- new abbrev \XMP.
+
+tugboat.bst:
+- for webpage entry type, do not output random material in brackets.
+- new field "monthtie" to editorially force a tie after the month.
+
+ltubguid documentation:
+- mention preferred placement of captions, namely below figures
+  but above tables and listings.
+
+-----------------
+2.29 (2023-03-08):
+
+ltugboat.cls:
+- \url: the fallback definition now typesets (in tt) more special characters.
+- omit TUG-specific doi when not typesetting in the production environment.
+
+tugboat.bst: abbreviate "chapter" to "ch." in tugboat.bst.
+
+-----------------
+2.28 (2023-01-16):
+
+ltugboat.cls:
+- \tburl: new name for \tbsurl, should work in all cases.
+          \def\tburl{\url} to keep using \url in the document body.
+- \titleref: command to typeset a book (etc.) title (slanted + \frenchspacing).
+- \tubdots: command for a normally-spaced ellipsis, not the squashed
+  Unicode character provided by most fonts.
+- \raggedleft: TUB's redefinition should not work with tabularray.
+
+tugboat.bst: use \url instead of \href, to avoid requiring hyperref.
+
+-----------------
+2.27 (2022-05-19):
+ltugboat.cls:
+- \tbsurlfootnote, \tbhurlfootnote: typeset urls in ragged-right
+  footnotes of their own.
+- \tubsentencespace: force a sentence-ending space, e.g., after a
+  post-sentence \cite.
+- \tubjustifiedpar: undo ragged-right or other, restoring normal
+  paragraph settings.
+- \eTeX: use \boldsymbol if available for this logo.
+
+-----------------
+2.26 (2021-10-12):
+ltugboat.cls:
+- strip a leading http(s) from \tbsurl and \tbhurl.
+- \Xe:increase negative kern.
+
+tugboat.bst:
+- allow editor field as well as author for @misc entries.
+- make @software another alias for @misc.
+- improve doi urls.
+
+-----------------
+2.25 (2021-06-27):
+ltugboat.cls:
+- new abbrevations: \RIT, \tbUTF.
+
+\tbUTF expands to \acro{UTF}, and, if the next character is a -
+(e.g., \tbUTF-8), don't allow breaking at it. (We don't define \UTF
+since other packages already do.)
+
+tugboat.bst:
+- new entry type @ctan, following ctanbib (https://ctan.org/pkg/ctanbib).
+- use \emph{...} instead of {\em ...}, so we get italic corrections.
+
+-----------------
+2.24 (2020-11-14):
+ltugboat.cls:
+- new hyphenation exceptions: Ja-pa-nese, Pak-i-stan.
+- new abbrevations: \macOS, \OpTeX.
+
+tugboat.bst:
+- new field bookauthor for @incollection and @inproceedings.
+- generalize truncation of author names with new code from
+  Oren Patashnik, using integers max.names and trunc.num
+  to control operation.
